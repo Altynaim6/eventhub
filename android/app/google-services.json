@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "770938006092",
+    "project_id": "eventhub-fae97",
+    "storage_bucket": "eventhub-fae97.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:770938006092:android:43583f1aaa7a38366a22e9",
+        "android_client_info": {
+          "package_name": "com.altynai.eventhub"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCxBMXgiL8MJruXZ9eN4asdQwDVl2LVbDc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
