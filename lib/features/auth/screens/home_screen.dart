@@ -9,6 +9,7 @@ import '../../events/bloc/event_event.dart';
 import '../../events/bloc/event_state.dart';
 
 import '../../events/screens/create_event_screen.dart';
+import '../../events/screens/event_details_screen.dart';
 import '../../events/widgets/event_card.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -162,6 +163,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
                       return EventCard(
                         event: event,
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => EventDetailsScreen(
+                                event: event,
+                              ),
+                            ),
+                          );
+                        },
                       );
                     },
                   );
