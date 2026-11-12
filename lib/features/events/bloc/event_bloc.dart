@@ -7,99 +7,50 @@ import '../repositories/event_repository.dart';
 import 'event_event.dart';
 import 'event_state.dart';
 
+/// Owns only the real-time list; write operations have route-scoped state.
 class EventBloc extends Bloc<EventEvent, EventState> {
-  final EventRepository repository;
-
+  final EventStore repository;
   StreamSubscription<List<EventModel>>? _eventsSubscription;
-
-  List<EventModel> _currentEvents = [];
+  bool _subscribing = false;
+  bool _closing = false;
+  int _generation = 0;
 
   EventBloc(this.repository) : super(const EventInitial()) {
-    // LOAD EVENTS
     on<LoadEvents>((event, emit) async {
+      if (_subscribing || _closing) return;
+      if (_eventsSubscription != null && state is! EventError) return;
+      _subscribing = true;
+      final generation = ++_generation;
       emit(const EventLoading());
-
-      await _eventsSubscription?.cancel();
-
-      _eventsSubscription = repository.getEvents().listen(
-        (events) {
-          add(EventsUpdated(events));
-        },
-        onError: (Object error) {
-          add(EventsStreamFailed(error.toString()));
-        },
-      );
-    });
-
-    // EVENTS UPDATED
-    on<EventsUpdated>((event, emit) {
-      _currentEvents = event.events;
-
-      emit(EventLoaded(event.events));
-    });
-
-    // STREAM ERROR
-    on<EventsStreamFailed>((event, emit) {
-      emit(EventError(event.message));
-    });
-
-    // CREATE EVENT
-    on<CreateEvent>((event, emit) async {
-      emit(EventOperationInProgress(_currentEvents));
-
       try {
-        await repository.createEvent(event.event);
-
-        emit(
-          EventOperationSuccess(
-            message: 'Event created successfully!',
-            events: _currentEvents,
-          ),
+        await _eventsSubscription?.cancel();
+        if (_closing) return;
+        _eventsSubscription = repository.getEvents().listen(
+          (events) {
+            if (!_closing && generation == _generation) {
+              add(EventsUpdated(List.unmodifiable(events)));
+            }
+          },
+          onError: (Object error) {
+            if (!_closing && generation == _generation) {
+              add(EventsStreamFailed(error.toString()));
+            }
+          },
         );
-      } catch (e) {
-        emit(EventError(e.toString()));
+      } catch (error) {
+        if (!_closing) emit(EventError(error.toString()));
+      } finally {
+        _subscribing = false;
       }
     });
-
-    // UPDATE EVENT
-    on<UpdateEvent>((event, emit) async {
-      emit(EventOperationInProgress(_currentEvents));
-
-      try {
-        await repository.updateEvent(event.event);
-
-        emit(
-          EventOperationSuccess(
-            message: 'Event updated successfully!',
-            events: _currentEvents,
-          ),
-        );
-      } catch (e) {
-        emit(EventError(e.toString()));
-      }
-    });
-
-    // DELETE EVENT
-    on<DeleteEvent>((event, emit) async {
-      emit(EventOperationInProgress(_currentEvents));
-
-      try {
-        await repository.deleteEvent(event.eventId);
-
-        emit(
-          EventOperationSuccess(
-            message: 'Event deleted successfully!',
-            events: _currentEvents,
-          ),
-        );
-      } catch (e) {
-        emit(EventError(e.toString()));
-      }
-    });
+    on<EventsUpdated>((event, emit) => emit(EventLoaded(event.events)));
+    on<EventsStreamFailed>((event, emit) => emit(EventError(event.message)));
   }
 
   @override
   Future<void> close() async {
+    _closing = true;
+    ++_generation;
     await _eventsSubscription?.cancel();
     await super.close();
   }

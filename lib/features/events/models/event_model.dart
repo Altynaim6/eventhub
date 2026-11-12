@@ -11,6 +11,9 @@ class EventModel extends Equatable {
   final int capacity;
   final String organizerId;
   final DateTime? createdAt;
+  final int registeredCount;
+
+  int get availablePlaces => (capacity - registeredCount).clamp(0, capacity);
 
   const EventModel({
     required this.id,
@@ -22,20 +25,23 @@ class EventModel extends Equatable {
     required this.capacity,
     required this.organizerId,
     this.createdAt,
+    this.registeredCount = 0,
   });
 
   // Convert Firestore document to EventModel
-  factory EventModel.fromFirestore(
-    DocumentSnapshot<Map<String, dynamic>> doc,
-  ) {
+  factory EventModel.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data();
 
     if (data == null) {
       throw StateError('Event document ${doc.id} does not exist');
     }
 
+    return EventModel.fromMap(doc.id, data);
+  }
+
+  factory EventModel.fromMap(String id, Map<String, dynamic> data) {
     return EventModel(
-      id: doc.id,
+      id: id,
       title: data['title'] as String,
       description: data['description'] as String,
       category: data['category'] as String,
@@ -44,6 +50,7 @@ class EventModel extends Equatable {
       capacity: (data['capacity'] as num).toInt(),
       organizerId: data['organizerId'] as String,
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
+      registeredCount: (data['registeredCount'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -56,6 +63,7 @@ class EventModel extends Equatable {
       'date': Timestamp.fromDate(date),
       'location': location,
       'capacity': capacity,
+      'registeredCount': registeredCount,
       'organizerId': organizerId,
       'createdAt': createdAt == null
           ? FieldValue.serverTimestamp()
@@ -65,14 +73,15 @@ class EventModel extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        title,
-        description,
-        category,
-        date,
-        location,
-        capacity,
-        organizerId,
-        createdAt,
-      ];
+    id,
+    title,
+    description,
+    category,
+    date,
+    location,
+    capacity,
+    organizerId,
+    createdAt,
+    registeredCount,
+  ];
 }
