@@ -5,11 +5,7 @@ void main() {
   testWidgets('EventHub basic widget test', (tester) async {
     await tester.pumpWidget(
       const MaterialApp(
-        home: Scaffold(
-          body: Center(
-            child: Text('EventHub'),
-          ),
-        ),
+        home: Scaffold(body: Center(child: Text('EventHub'))),
       ),
     );
 
