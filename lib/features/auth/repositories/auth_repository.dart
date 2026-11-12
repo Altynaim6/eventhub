@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../profile/models/user_profile.dart';
+
 class AuthRepository {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -12,6 +14,7 @@ class AuthRepository {
     required String email,
     required String password,
   }) async {
+    UserProfile.validatedName(name);
     final credential = await _auth.createUserWithEmailAndPassword(
       email: email.trim(),
       password: password,
@@ -32,10 +35,7 @@ class AuthRepository {
     });
   }
 
-  Future<void> login({
-    required String email,
-    required String password,
-  }) async {
+  Future<void> login({required String email, required String password}) async {
     await _auth.signInWithEmailAndPassword(
       email: email.trim(),
       password: password,

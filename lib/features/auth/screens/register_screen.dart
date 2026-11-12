@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../ui/screen_components.dart';
+
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -38,54 +40,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
         email.isEmpty ||
         password.isEmpty ||
         confirmPassword.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fill in all fields'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      showErrorSnackBar(context, 'Please fill in all fields');
       return;
     }
 
     // Check password length
     if (password.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Password must be at least 6 characters'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      showErrorSnackBar(context, 'Password must be at least 6 characters');
       return;
     }
 
     // Check passwords match
     if (password != confirmPassword) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Passwords do not match'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      showErrorSnackBar(context, 'Passwords do not match');
       return;
     }
 
     // Send registration event to AuthBloc
     context.read<AuthBloc>().add(
-      AuthRegisterRequested(
-        name: name,
-        email: email,
-        password: password,
-      ),
+      AuthRegisterRequested(name: name, email: email, password: password),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Create Account'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('Create Account'), centerTitle: true),
 
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
@@ -96,166 +76,120 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
             // Close RegisterScreen and return to root route.
             // main.dart will display HomeScreen.
-            Navigator.of(context).popUntil(
-              (route) => route.isFirst,
-            );
+            Navigator.of(context).popUntil((route) => route.isFirst);
           }
 
           // Registration error
           if (state is AuthError) {
             debugPrint('Registration error: ${state.message}');
 
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: Colors.red,
-              ),
-            );
+            showErrorSnackBar(context, state.message);
           }
         },
 
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+        child: ContentWidth(
+          maxWidth: 520,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
 
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 40),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: 40),
 
-              // Registration icon
-              const Icon(
-                Icons.person_add_alt_1,
-                size: 80,
-                color: Color(0xFF6C2BD9),
-              ),
-
-              const SizedBox(height: 16),
-
-              const Text(
-                'Create Your Account',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
+                // Registration icon
+                Icon(
+                  Icons.person_add_alt_1,
+                  size: 80,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
-              ),
 
-              const SizedBox(height: 8),
+                const SizedBox(height: 16),
 
-              const Text(
-                'Join EventHub and discover amazing events',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey,
+                const Text(
+                  'Create Your Account',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
                 ),
-              ),
 
-              const SizedBox(height: 32),
+                const SizedBox(height: 8),
 
-              // Full name
-              TextField(
-                controller: nameController,
-                textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(
-                  labelText: 'Full Name',
-                  prefixIcon: Icon(Icons.person_outline),
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 24),
+
+                // Full name
+                TextField(
+                  controller: nameController,
+                  maxLength: 100,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: const InputDecoration(
+                    labelText: 'Full Name',
+                    prefixIcon: Icon(Icons.person_outline),
+                  ),
                 ),
-              ),
 
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-              // Email
-              TextField(
-                controller: emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  prefixIcon: Icon(Icons.email_outlined),
-                  border: OutlineInputBorder(),
+                // Email
+                TextField(
+                  controller: emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    prefixIcon: Icon(Icons.email_outlined),
+                  ),
                 ),
-              ),
 
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-              // Password
-              TextField(
-                controller: passwordController,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: 'Password',
-                  prefixIcon: Icon(Icons.lock_outline),
-                  border: OutlineInputBorder(),
+                // Password
+                TextField(
+                  controller: passwordController,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Password',
+                    prefixIcon: Icon(Icons.lock_outline),
+                  ),
                 ),
-              ),
 
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-              // Confirm password
-              TextField(
-                controller: confirmController,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: 'Confirm Password',
-                  prefixIcon: Icon(Icons.lock_reset),
-                  border: OutlineInputBorder(),
+                // Confirm password
+                TextField(
+                  controller: confirmController,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Confirm Password',
+                    prefixIcon: Icon(Icons.lock_reset),
+                  ),
                 ),
-              ),
 
-              const SizedBox(height: 32),
+                const SizedBox(height: 32),
 
-              // Register button
-              BlocBuilder<AuthBloc, AuthState>(
-                builder: (context, state) {
-                  final isLoading = state is AuthLoading;
+                // Register button
+                BlocBuilder<AuthBloc, AuthState>(
+                  builder: (context, state) {
+                    final isLoading = state is AuthLoading;
 
-                  return SizedBox(
-                    height: 52,
-                    child: ElevatedButton(
+                    return FilledButton(
                       onPressed: isLoading ? null : register,
-
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF6C2BD9),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                      child: Text(
+                        isLoading ? 'Creating account…' : 'Create Account',
                       ),
-
-                      child: isLoading
-                          ? const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Text(
-                              'Create Account',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                    ),
-                  );
-                },
-              ),
-
-              const SizedBox(height: 24),
-
-              // Back to login
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-                child: const Text(
-                  'Already have an account? Login',
+                    );
+                  },
                 ),
-              ),
-            ],
+
+                const SizedBox(height: 24),
+
+                // Back to login
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('Already have an account? Login'),
+                ),
+              ],
+            ),
           ),
         ),
       ),

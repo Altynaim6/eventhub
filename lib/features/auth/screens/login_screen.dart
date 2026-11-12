@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../ui/screen_components.dart';
+
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -30,92 +32,89 @@ class _LoginScreenState extends State<LoginScreen> {
       appBar: AppBar(title: const Text('EventHub')),
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
-          if (state is AuthError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message)),
-            );
+          if (state is AuthError && ModalRoute.isCurrentOf(context) == true) {
+            showErrorSnackBar(context, state.message);
           }
         },
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                Icons.event_available,
-                size: 80,
-                color: Color(0xFF6C2BD9),
-              ),
-
-              const SizedBox(height: 24),
-
-              const Text(
-                'Welcome to EventHub',
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
+        child: ContentWidth(
+          maxWidth: 520,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Icon(
+                  Icons.event_available,
+                  size: 80,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
-              ),
 
-              const SizedBox(height: 32),
+                const SizedBox(height: 24),
 
-              TextField(
-                controller: emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  border: OutlineInputBorder(),
+                Text(
+                  'Welcome to EventHub',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                  textAlign: TextAlign.center,
                 ),
-              ),
 
-              const SizedBox(height: 16),
+                const SizedBox(height: 32),
 
-              TextField(
-                controller: passwordController,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: 'Password',
-                  border: OutlineInputBorder(),
+                TextField(
+                  controller: emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    prefixIcon: Icon(Icons.email_outlined),
+                  ),
                 ),
-              ),
 
-              const SizedBox(height: 24),
+                const SizedBox(height: 16),
 
-              BlocBuilder<AuthBloc, AuthState>(
-                builder: (context, state) {
-                  return SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: state is AuthLoading
-                          ? null
-                          : () {
-                              context.read<AuthBloc>().add(
-                                    AuthLoginRequested(
-                                      email: emailController.text,
-                                      password: passwordController.text,
-                                    ),
-                                  );
-                            },
-                      child: state is AuthLoading
-                          ? const CircularProgressIndicator()
-                          : const Text('Login'),
-                    ),
-                  );
-                },
-              ),
+                TextField(
+                  controller: passwordController,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Password',
+                    prefixIcon: Icon(Icons.lock_outline),
+                  ),
+                ),
 
-              TextButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const RegisterScreen(),
-                    ),
-                  );
-                },
-                child: const Text("Don't have an account? Register"),
-              ),
-            ],
+                const SizedBox(height: 24),
+
+                BlocBuilder<AuthBloc, AuthState>(
+                  builder: (context, state) {
+                    return SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: state is AuthLoading
+                            ? null
+                            : () {
+                                context.read<AuthBloc>().add(
+                                  AuthLoginRequested(
+                                    email: emailController.text,
+                                    password: passwordController.text,
+                                  ),
+                                );
+                              },
+                        child: state is AuthLoading
+                            ? const Text('Signing in…')
+                            : const Text('Login'),
+                      ),
+                    );
+                  },
+                ),
+
+                TextButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const RegisterScreen()),
+                    );
+                  },
+                  child: const Text("Don't have an account? Register"),
+                ),
+              ],
+            ),
           ),
         ),
       ),
