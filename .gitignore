@@ -53,3 +53,7 @@ android/key.properties
 *.keystore
 .env
 .env.*
+# Local Firestore rules test dependencies and emulator logs
+tools/firestore-tests/node_modules/
+*-debug.log
+.firebase/

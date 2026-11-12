@@ -1,0 +1,83 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function owner() { return signedIn() && resource.data.organizerId == request.auth.uid; }
+    function nonBlank(value) { return value is string && value.matches('[\\s\\S]*[^\\s][\\s\\S]*'); }
+    function validName(value) { return nonBlank(value) && value.matches('[\\s\\S]{1,100}'); }
+    function validEvent(data) {
+      return nonBlank(data.title) && nonBlank(data.description)
+        && nonBlank(data.category) && nonBlank(data.location)
+        && data.date is timestamp && data.date > request.time
+        && data.capacity is int && data.capacity > 0
+        && data.organizerId is string;
+    }
+    function count(data) { return data.get('registeredCount', 0); }
+    function validCount(data) {
+      return count(data) is int && count(data) >= 0 && count(data) <= data.capacity;
+    }
+    match /events/{eventId} {
+      function myRegistration() {
+        return /databases/$(database)/documents/events/$(eventId)/registrations/$(request.auth.uid);
+      }
+      function registrationChange() {
+        let before = count(resource.data);
+        let after = count(request.resource.data);
+        return signedIn() && validCount(request.resource.data)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['registeredCount'])
+          && ((after == before + 1 && resource.data.date > request.time
+                && !exists(myRegistration()) && existsAfter(myRegistration()))
+            || (after == before - 1 && exists(myRegistration()) && !existsAfter(myRegistration())));
+      }
+      allow read: if signedIn();
+      allow create: if signedIn() && validEvent(request.resource.data)
+        && request.resource.data.organizerId == request.auth.uid
+        && request.resource.data.keys().hasOnly([
+          'title', 'description', 'category', 'date', 'location', 'capacity', 'organizerId', 'createdAt', 'registeredCount'
+        ]) && request.resource.data.createdAt == request.time
+        && count(request.resource.data) == 0;
+      // Preserve legacy optional fields, but never permit clients to change them.
+      allow update: if (owner() && validEvent(request.resource.data) && validCount(request.resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'title', 'description', 'category', 'date', 'location', 'capacity'
+        ])) || registrationChange();
+      allow delete: if owner() && count(resource.data) == 0;
+
+      match /registrations/{userId} {
+        function parent() { return /databases/$(database)/documents/events/$(eventId); }
+        function self() { return signedIn() && request.auth.uid == userId; }
+        function delta(amount) {
+          return exists(parent()) && existsAfter(parent())
+            && count(getAfter(parent()).data) == count(get(parent()).data) + amount
+            && validCount(getAfter(parent()).data);
+        }
+        allow read: if self() || (signedIn() && get(parent()).data.organizerId == request.auth.uid);
+        allow create: if self() && delta(1)
+          && get(parent()).data.date > request.time
+          && request.resource.data.keys().hasOnly(['userId', 'registeredAt', 'displayName'])
+          && request.resource.data.userId == userId
+          && request.resource.data.registeredAt == request.time
+          && (!('displayName' in request.resource.data)
+            || validName(request.resource.data.displayName));
+        allow delete: if self() && delta(-1);
+        // Registration data is immutable; cancel and re-register instead.
+      }
+    }
+    // Collection-group list queries must constrain userId to the signed-in user.
+    match /{path=**}/registrations/{registrationId} {
+      allow list: if signedIn() && resource.data.userId == request.auth.uid;
+    }
+    match /users/{userId} {
+      allow read: if signedIn() && request.auth.uid == userId;
+      allow create: if signedIn() && request.auth.uid == userId
+        && request.resource.data.keys().hasOnly(['name', 'email', 'createdAt'])
+        && validName(request.resource.data.name)
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.createdAt == request.time;
+      allow update: if signedIn() && request.auth.uid == userId
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name'])
+        && validName(request.resource.data.name);
+    }
+    // Unimplemented collections/subcollections are denied by default.
+  }
+}
